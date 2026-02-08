@@ -8,7 +8,7 @@ import { DefaultSection } from "@/components/sections/default-section";
 import { Footer } from "@/components/layout/footer";
 import { PageTransition } from "@/components/layout/page-transition";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const raw = await getHomepage();

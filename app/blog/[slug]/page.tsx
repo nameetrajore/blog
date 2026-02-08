@@ -4,7 +4,7 @@ import { getBlogPost, listBlogPosts } from "@/lib/s3/content";
 import { renderMDX, extractHeadings } from "@/lib/mdx/processor";
 import { TableOfContents } from "@/components/table-of-contents";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,

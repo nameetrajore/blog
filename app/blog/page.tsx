@@ -1,7 +1,7 @@
 import { listBlogPosts } from "@/lib/s3/content";
 import { BlogCard } from "@/components/sections/blog-card";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Blog",
