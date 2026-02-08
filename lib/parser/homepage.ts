@@ -178,7 +178,7 @@ function parseExperienceItems(body: string): ExperienceItem[] {
         continue;
       }
 
-      if (description) description += " ";
+      if (description) description += "\n";
       description += line;
     }
 

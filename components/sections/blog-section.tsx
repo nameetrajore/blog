@@ -8,7 +8,7 @@ export async function BlogSection({ heading }: { heading: string }) {
 
   return (
     <section className="py-8">
-      <h2 className="text-xl font-semibold tracking-tight mb-6">{heading}</h2>
+      <h2 className="text-lg font-semibold tracking-tight mb-6">{heading}</h2>
       {recent.length === 0 ? (
         <p className="text-sm text-muted-foreground">No posts yet.</p>
       ) : (

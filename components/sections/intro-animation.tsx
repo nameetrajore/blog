@@ -19,7 +19,7 @@ export function IntroAnimation({
 
   return (
     <div className="space-y-2">
-      <h1 className="text-2xl font-light tracking-tight">
+      <h1 className="text-xl font-light tracking-tight">
         {name.split("").map((char, i) => (
           <span
             key={i}

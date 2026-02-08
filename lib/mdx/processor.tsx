@@ -29,17 +29,17 @@ function extractText(node: ReactNode): string {
 
 const mdxComponents = {
   h1: (props: El<"h1">) => (
-    <h1 className="text-2xl font-light tracking-tight mb-4" {...props} />
+    <h1 className="text-xl font-light tracking-tight mb-4" {...props} />
   ),
   h2: (props: El<"h2">) => (
-    <h2 className="text-xl font-semibold tracking-tight mb-3" {...props} />
+    <h2 className="text-lg font-semibold tracking-tight mb-3" {...props} />
   ),
   h3: (props: El<"h3">) => (
-    <h3 className="text-lg font-medium mb-2" {...props} />
+    <h3 className="text-base font-medium mb-2" {...props} />
   ),
   p: (props: El<"p">) => (
     <p
-      className="text-base text-muted-foreground leading-relaxed mb-4"
+      className="text-sm text-muted-foreground leading-relaxed mb-4"
       {...props}
     />
   ),
@@ -62,7 +62,7 @@ const mdxComponents = {
           {...rest}
         />
         {caption && (
-          <span className="block text-center text-sm text-muted-foreground mt-2">
+          <span className="block text-center text-xs text-muted-foreground mt-2">
             {caption}
           </span>
         )}
@@ -75,7 +75,7 @@ const mdxComponents = {
     }
     return (
       <code
-        className="bg-muted px-1.5 py-0.5 rounded text-[0.9375rem] text-muted-foreground"
+        className="bg-muted px-1.5 py-0.5 rounded text-[0.8125rem] text-muted-foreground"
         {...rest}
       >
         {children}
@@ -94,7 +94,7 @@ const mdxComponents = {
           <span className="text-xs text-muted-foreground">{lang}</span>
           <CopyButton text={codeText} />
         </div>
-        <pre className="p-4 overflow-x-auto leading-relaxed text-[0.875rem] [&_code]:text-[0.875rem]" {...rest}>{children}</pre>
+        <pre className="p-4 overflow-x-auto leading-relaxed text-[0.8125rem] [&_code]:text-[0.8125rem]" {...rest}>{children}</pre>
       </div>
     );
   },
@@ -121,13 +121,13 @@ const mdxComponents = {
   td: (props: El<"td">) => <td className="px-3 py-2" {...props} />,
   ul: (props: El<"ul">) => (
     <ul
-      className="list-disc pl-6 mb-4 space-y-1 text-base text-muted-foreground"
+      className="list-disc pl-6 mb-4 space-y-1 text-sm text-muted-foreground"
       {...props}
     />
   ),
   ol: (props: El<"ol">) => (
     <ol
-      className="list-decimal pl-6 mb-4 space-y-1 text-base text-muted-foreground"
+      className="list-decimal pl-6 mb-4 space-y-1 text-sm text-muted-foreground"
       {...props}
     />
   ),

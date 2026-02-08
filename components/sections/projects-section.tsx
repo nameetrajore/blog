@@ -11,7 +11,7 @@ export function ProjectsSection({
 }) {
   return (
     <section className="py-8">
-      <h2 className="text-xl font-semibold tracking-tight mb-6">{heading}</h2>
+      <h2 className="text-lg font-semibold tracking-tight mb-6">{heading}</h2>
       <div className="grid gap-6 sm:grid-cols-2">
         {items.map((project) => (
           <a
