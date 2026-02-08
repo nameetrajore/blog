@@ -2,6 +2,8 @@ import { getObject, putObject } from "@/lib/s3/client";
 import { revalidateHomepage } from "@/lib/s3/content";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const content = await getObject("homepage.mdx");

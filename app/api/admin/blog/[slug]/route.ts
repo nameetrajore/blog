@@ -1,5 +1,7 @@
 import { getObject, putObject, deleteObject } from "@/lib/s3/client";
 import { revalidateBlog } from "@/lib/s3/content";
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(

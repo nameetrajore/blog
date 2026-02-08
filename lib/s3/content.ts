@@ -48,7 +48,7 @@ export async function listBlogPosts() {
 }
 
 export function revalidateHomepage() {
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export function revalidateBlog() {

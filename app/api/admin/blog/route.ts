@@ -1,5 +1,7 @@
 import { getObject, putObject } from "@/lib/s3/client";
 import { revalidateBlog } from "@/lib/s3/content";
+
+export const dynamic = "force-dynamic";
 import { ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { s3 } from "@/lib/s3/client";
 import matter from "gray-matter";
