@@ -13,11 +13,11 @@ export function PageTransition({ children }: { children: ReactNode }) {
     <>
       {Children.map(children, (child, i) => (
         <div
-          className="transition-all duration-700 ease-out"
+          className="transition-all duration-500 ease-out"
           style={{
             opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(12px)",
-            transitionDelay: `${i * 150}ms`,
+            transform: mounted ? "translateY(0)" : "translateY(6px)",
+            transitionDelay: `${i * 80}ms`,
           }}
         >
           {child}
