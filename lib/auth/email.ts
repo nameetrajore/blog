@@ -3,9 +3,8 @@ import { signToken } from "./jwt";
 
 const ses = new SESClient({ region: process.env.AWS_REGION! });
 
-export async function sendMagicLink(email: string) {
+export async function sendMagicLink(email: string, baseUrl: string) {
   const token = signToken(email);
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   const magicLink = `${baseUrl}/api/auth/verify?token=${token}`;
 
   const command = new SendEmailCommand({
