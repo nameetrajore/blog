@@ -45,6 +45,7 @@ export function EditorLayout({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [splitPercent, setSplitPercent] = useState(50);
+  const [mobileTab, setMobileTab] = useState<"editor" | "preview">("editor");
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -101,32 +102,39 @@ export function EditorLayout({
     return () => window.removeEventListener("beforeunload", handler);
   }, [hasUnsavedChanges]);
 
-  // Resizable split pane
-  const handleMouseDown = useCallback(() => {
+  // Resizable split pane (mouse + touch)
+  const handleDragStart = useCallback(() => {
     dragging.current = true;
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
   }, []);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMove = (clientX: number) => {
       if (!dragging.current || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      const percent = ((e.clientX - rect.left) / rect.width) * 100;
+      const percent = ((clientX - rect.left) / rect.width) * 100;
       setSplitPercent(Math.min(80, Math.max(20, percent)));
     };
-    const handleMouseUp = () => {
+    const handleEnd = () => {
       if (dragging.current) {
         dragging.current = false;
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
       }
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX);
+    const onTouchMove = (e: TouchEvent) => handleMove(e.touches[0].clientX);
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", onTouchMove);
+    window.addEventListener("touchend", handleEnd);
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", handleEnd);
     };
   }, []);
 
@@ -226,13 +234,78 @@ export function EditorLayout({
     }
   };
 
+  const frontmatterForm = showFrontmatterForm && (
+    <div className="px-4 py-3 border-b border-border space-y-2">
+      <div className="flex items-center gap-2">
+        <label className="text-xs text-muted-foreground w-20 shrink-0">
+          Title
+        </label>
+        <input
+          type="text"
+          value={fmTitle}
+          onChange={(e) => handleFmChange("title", e.target.value)}
+          className="flex-1 min-w-0 px-2 py-1 border border-input rounded text-sm bg-background text-foreground outline-none focus:ring-2 focus:ring-ring"
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <label className="text-xs text-muted-foreground w-20 shrink-0">
+          Description
+        </label>
+        <input
+          type="text"
+          value={fmDescription}
+          onChange={(e) =>
+            handleFmChange("description", e.target.value)
+          }
+          className="flex-1 min-w-0 px-2 py-1 border border-input rounded text-sm bg-background text-foreground outline-none focus:ring-2 focus:ring-ring"
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <label className="text-xs text-muted-foreground w-20 shrink-0">
+          Date
+        </label>
+        <input
+          type="date"
+          value={fmDate}
+          onChange={(e) => handleFmChange("date", e.target.value)}
+          className="px-2 py-1 border border-input rounded text-sm bg-background text-foreground outline-none focus:ring-2 focus:ring-ring"
+        />
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col h-[calc(100vh-57px)]">
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border">
-        <div className="text-sm text-muted-foreground">
+    <div className="flex flex-col h-[calc(100dvh-57px)]">
+      <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-border">
+        <div className="flex items-center gap-2 md:hidden">
+          <button
+            onClick={() => setMobileTab("editor")}
+            className={`px-3 py-1 text-sm rounded-md transition-colors cursor-pointer ${
+              mobileTab === "editor"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Editor
+          </button>
+          <button
+            onClick={() => setMobileTab("preview")}
+            className={`px-3 py-1 text-sm rounded-md transition-colors cursor-pointer ${
+              mobileTab === "preview"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Preview
+          </button>
+        </div>
+        <div className="hidden md:block text-sm text-muted-foreground">
           {saving ? "Saving..." : saved ? "Saved" : ""}
         </div>
         <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground md:hidden">
+            {saving ? "Saving..." : saved ? "Saved" : ""}
+          </span>
           {hasUnsavedChanges && (
             <span className="w-2 h-2 bg-yellow-400 rounded-full" />
           )}
@@ -245,50 +318,14 @@ export function EditorLayout({
           </button>
         </div>
       </div>
-      <div className="flex flex-1 min-h-0" ref={containerRef}>
+
+      {/* Desktop: side-by-side split pane */}
+      <div className="hidden md:flex flex-1 min-h-0" ref={containerRef}>
         <div
           className="flex flex-col min-h-0"
           style={{ width: `${splitPercent}%` }}
         >
-          {showFrontmatterForm && (
-            <div className="px-4 py-3 border-b border-border space-y-2">
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground w-20">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={fmTitle}
-                  onChange={(e) => handleFmChange("title", e.target.value)}
-                  className="flex-1 px-2 py-1 border border-input rounded text-sm bg-background text-foreground outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground w-20">
-                  Description
-                </label>
-                <input
-                  type="text"
-                  value={fmDescription}
-                  onChange={(e) =>
-                    handleFmChange("description", e.target.value)
-                  }
-                  className="flex-1 px-2 py-1 border border-input rounded text-sm bg-background text-foreground outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground w-20">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={fmDate}
-                  onChange={(e) => handleFmChange("date", e.target.value)}
-                  className="px-2 py-1 border border-input rounded text-sm bg-background text-foreground outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-            </div>
-          )}
+          {frontmatterForm}
           <textarea
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
@@ -299,11 +336,32 @@ export function EditorLayout({
         </div>
         <div
           className="w-1 bg-border hover:bg-primary/30 cursor-col-resize transition-colors shrink-0"
-          onMouseDown={handleMouseDown}
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
         />
         <div className="flex-1 overflow-auto p-6 min-w-0">
           <MarkdownPreview content={content} />
         </div>
+      </div>
+
+      {/* Mobile: tabbed editor/preview */}
+      <div className="flex flex-col flex-1 min-h-0 md:hidden">
+        {mobileTab === "editor" ? (
+          <>
+            {frontmatterForm}
+            <textarea
+              value={content}
+              onChange={(e) => handleContentChange(e.target.value)}
+              onKeyDown={handleTextareaKeyDown}
+              className="w-full flex-1 p-4 bg-background text-foreground font-mono text-sm resize-none outline-none"
+              spellCheck={false}
+            />
+          </>
+        ) : (
+          <div className="flex-1 overflow-auto p-4">
+            <MarkdownPreview content={content} />
+          </div>
+        )}
       </div>
     </div>
   );
