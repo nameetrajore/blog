@@ -12,9 +12,7 @@ export function IntroAnimation({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Small delay so the animation is visible after page load
-    const timer = setTimeout(() => setMounted(true), 100);
-    return () => clearTimeout(timer);
+    setMounted(true);
   }, []);
 
   return (
@@ -26,9 +24,8 @@ export function IntroAnimation({
             className="inline-block transition-all duration-500"
             style={{
               opacity: mounted ? 1 : 0,
-              transform: mounted ? "translateY(0)" : "translateY(8px)",
-              filter: mounted ? "blur(0px)" : "blur(4px)",
-              transitionDelay: `${i * 40}ms`,
+              transform: mounted ? "translateY(0)" : "translateY(4px)",
+              transitionDelay: `${i * 25}ms`,
             }}
           >
             {char === " " ? "\u00A0" : char}
@@ -36,11 +33,11 @@ export function IntroAnimation({
         ))}
       </h1>
       <p
-        className="text-sm text-muted-foreground transition-all duration-700"
+        className="text-sm text-muted-foreground transition-all duration-500"
         style={{
           opacity: mounted ? 1 : 0,
-          transform: mounted ? "translateY(0)" : "translateY(6px)",
-          transitionDelay: `${name.length * 40 + 200}ms`,
+          transform: mounted ? "translateY(0)" : "translateY(4px)",
+          transitionDelay: `${name.length * 25 + 100}ms`,
         }}
       >
         {subtitle}
