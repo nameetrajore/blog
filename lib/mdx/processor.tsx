@@ -58,7 +58,7 @@ const mdxComponents = {
       <span className={`block ${isFullWidth ? "-mx-6 md:-mx-16 mb-4" : "mb-4"}`}>
         <img
           alt={caption}
-          className="rounded-lg w-full"
+          className="rounded-lg w-full bg-white p-2 dark:bg-white/95"
           {...rest}
         />
         {caption && (

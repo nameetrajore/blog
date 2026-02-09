@@ -1,20 +1,21 @@
 import { GithubIcon, Linkedin01Icon, Mail01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const socialLinks = [
   {
     icon: GithubIcon,
-    href: "https://github.com",
+    href: "https://github.com/nameetrajore",
     label: "GitHub",
   },
   {
     icon: Linkedin01Icon,
-    href: "https://linkedin.com",
+    href: "https://linkedin.com/in/nameet-rajore",
     label: "LinkedIn",
   },
   {
     icon: Mail01Icon,
-    href: "mailto:hello@example.com",
+    href: "mailto:nameet.rajore@gmail.com",
     label: "Email",
   },
 ];
@@ -39,6 +40,7 @@ export function Footer() {
               <HugeiconsIcon icon={link.icon} size={18} />
             </a>
           ))}
+          <ThemeToggle />
         </div>
       </div>
     </footer>
