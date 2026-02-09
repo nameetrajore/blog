@@ -2,7 +2,10 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import matter from "gray-matter";
+import { useTheme } from "next-themes";
 import { MarkdownPreview } from "./markdown-preview";
+import { CodeMirrorEditor, type CodeMirrorHandle } from "./codemirror-editor";
+import { MarkdownToolbar } from "./markdown-toolbar";
 
 interface EditorLayoutProps {
   initialContent: string;
@@ -57,6 +60,10 @@ export function EditorLayout({
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [publishing, setPublishing] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const desktopEditorRef = useRef<CodeMirrorHandle>(null);
+  const mobileEditorRef = useRef<CodeMirrorHandle>(null);
+  const [zenMode, setZenMode] = useState(false);
   const [hasDraft, setHasDraft] = useState(initialHasDraft ?? false);
 
   // Frontmatter state
@@ -129,17 +136,20 @@ export function EditorLayout({
     };
   }, []);
 
-  // Cmd+S / Ctrl+S
+  // Cmd+S / Ctrl+S, Escape to exit zen mode
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
         handleSave();
       }
+      if (e.key === "Escape" && zenMode) {
+        setZenMode(false);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleSave]);
+  }, [handleSave, zenMode]);
 
   // beforeunload warning
   useEffect(() => {
@@ -187,74 +197,6 @@ export function EditorLayout({
       window.removeEventListener("touchend", handleEnd);
     };
   }, []);
-
-  // Keyboard shortcuts in textarea
-  const handleTextareaKeyDown = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>,
-  ) => {
-    // Tab inserts 2 spaces
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const textarea = e.currentTarget;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newContent =
-        content.substring(0, start) + "  " + content.substring(end);
-      setContent(newContent);
-      requestAnimationFrame(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-      });
-    }
-
-    // Cmd+/ or Ctrl+/ toggles HTML comment
-    if (e.key === "/" && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      const textarea = e.currentTarget;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-
-      // Expand selection to full lines
-      const lineStart = content.lastIndexOf("\n", start - 1) + 1;
-      const lineEnd =
-        content.indexOf("\n", end) === -1
-          ? content.length
-          : content.indexOf("\n", end);
-      const selected = content.substring(lineStart, lineEnd);
-
-      // Toggle: unwrap if already commented, wrap if not
-      const trimmed = selected.trim();
-      const isCommented =
-        trimmed.startsWith("<!-- ") && trimmed.endsWith(" -->");
-
-      let replacement: string;
-      let cursorStart: number;
-      let cursorEnd: number;
-
-      if (isCommented) {
-        // Remove comment wrapping
-        replacement = selected
-          .replace(/<!-- /, "")
-          .replace(/ -->$/, "")
-          .replace(/ -->(\r?)$/, "$1");
-        cursorStart = lineStart;
-        cursorEnd = lineStart + replacement.length;
-      } else {
-        replacement = `<!-- ${selected} -->`;
-        cursorStart = lineStart;
-        cursorEnd = lineStart + replacement.length;
-      }
-
-      const newContent =
-        content.substring(0, lineStart) +
-        replacement +
-        content.substring(lineEnd);
-      setContent(newContent);
-      requestAnimationFrame(() => {
-        textarea.selectionStart = cursorStart;
-        textarea.selectionEnd = cursorEnd;
-      });
-    }
-  };
 
   // Frontmatter form change -> rebuild raw content
   const handleFmChange = (
@@ -438,6 +380,13 @@ export function EditorLayout({
               {publishing ? "Unpublishing..." : "Unpublish"}
             </button>
           )}
+          <button
+            onClick={() => setZenMode(!zenMode)}
+            title={zenMode ? "Exit zen mode (Esc)" : "Zen mode"}
+            className="hidden md:inline-flex px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors cursor-pointer"
+          >
+            {zenMode ? "Exit Zen" : "Zen"}
+          </button>
         </div>
       </div>
 
@@ -445,25 +394,32 @@ export function EditorLayout({
       <div className="hidden md:flex flex-1 min-h-0" ref={containerRef}>
         <div
           className="flex flex-col min-h-0"
-          style={{ width: `${splitPercent}%` }}
+          style={{ width: zenMode ? "100%" : `${splitPercent}%` }}
         >
           {frontmatterForm}
-          <textarea
-            value={content}
-            onChange={(e) => handleContentChange(e.target.value)}
-            onKeyDown={handleTextareaKeyDown}
-            className="w-full flex-1 p-4 bg-background text-foreground font-mono text-sm resize-none outline-none"
-            spellCheck={false}
-          />
+          <MarkdownToolbar editorRef={desktopEditorRef} />
+          <div className="flex-1 min-h-0">
+            <CodeMirrorEditor
+              ref={desktopEditorRef}
+              value={content}
+              onChange={handleContentChange}
+              onSave={handleSave}
+              darkMode={resolvedTheme === "dark"}
+            />
+          </div>
         </div>
-        <div
-          className="w-1 bg-border hover:bg-primary/30 cursor-col-resize transition-colors shrink-0"
-          onMouseDown={handleDragStart}
-          onTouchStart={handleDragStart}
-        />
-        <div className="flex-1 overflow-auto p-6 min-w-0">
-          <MarkdownPreview content={content} />
-        </div>
+        {!zenMode && (
+          <>
+            <div
+              className="w-1 bg-border hover:bg-primary/30 cursor-col-resize transition-colors shrink-0"
+              onMouseDown={handleDragStart}
+              onTouchStart={handleDragStart}
+            />
+            <div className="flex-1 overflow-auto p-6 min-w-0">
+              <MarkdownPreview content={content} />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Mobile: tabbed editor/preview */}
@@ -471,13 +427,16 @@ export function EditorLayout({
         {mobileTab === "editor" ? (
           <>
             {frontmatterForm}
-            <textarea
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              onKeyDown={handleTextareaKeyDown}
-              className="w-full flex-1 p-4 bg-background text-foreground font-mono text-sm resize-none outline-none"
-              spellCheck={false}
-            />
+            <MarkdownToolbar editorRef={mobileEditorRef} />
+            <div className="flex-1 min-h-0">
+              <CodeMirrorEditor
+                ref={mobileEditorRef}
+                value={content}
+                onChange={handleContentChange}
+                onSave={handleSave}
+                darkMode={resolvedTheme === "dark"}
+              />
+            </div>
           </>
         ) : (
           <div className="flex-1 overflow-auto p-4">
