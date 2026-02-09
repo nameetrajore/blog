@@ -7,6 +7,7 @@ import {
   Children,
 } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { Mermaid } from "@/components/mermaid";
 import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
@@ -88,6 +89,9 @@ const mdxComponents = {
   }: El<"pre"> & { "data-language"?: string }) => {
     const lang = rest["data-language"] ?? "";
     const codeText = extractText(children).replace(/\n+$/, "");
+    if (lang === "mermaid") {
+      return <Mermaid code={codeText} />;
+    }
     return (
       <div className="rounded-lg bg-muted mb-4 overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">

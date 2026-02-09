@@ -18,15 +18,36 @@ export async function GET() {
       .map((obj) => obj.Key!)
       .filter((key) => key.endsWith(".mdx"));
 
+    // Group keys by slug to determine draft/published status
+    const slugMap = new Map<string, { hasDraft: boolean; hasPublished: boolean }>();
+    for (const key of keys) {
+      const isDraft = key.endsWith(".draft.mdx");
+      const slug = key
+        .replace("blog/", "")
+        .replace(".draft.mdx", "")
+        .replace(".mdx", "");
+      if (!slugMap.has(slug)) {
+        slugMap.set(slug, { hasDraft: false, hasPublished: false });
+      }
+      const entry = slugMap.get(slug)!;
+      if (isDraft) entry.hasDraft = true;
+      else entry.hasPublished = true;
+    }
+
     const posts = await Promise.all(
-      keys.map(async (key) => {
+      Array.from(slugMap.entries()).map(async ([slug, status]) => {
+        // Prefer reading draft for admin metadata
+        const key = status.hasDraft
+          ? `blog/${slug}.draft.mdx`
+          : `blog/${slug}.mdx`;
         const raw = await getObject(key);
         const { data: frontmatter } = matter(raw);
-        const slug = key.replace("blog/", "").replace(".mdx", "");
         return {
           slug,
           title: (frontmatter.title as string) ?? slug,
           date: (frontmatter.date as string) ?? "",
+          published: status.hasPublished,
+          hasDraft: status.hasDraft,
         };
       })
     );
@@ -47,8 +68,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Slug and content are required" }, { status: 400 });
     }
 
-    await putObject(`blog/${slug}.mdx`, content);
-    revalidateBlog();
+    await putObject(`blog/${slug}.draft.mdx`, content);
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("Failed to create post:", e);

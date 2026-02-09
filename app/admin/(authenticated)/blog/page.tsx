@@ -8,6 +8,30 @@ interface Post {
   slug: string;
   title: string;
   date: string;
+  published: boolean;
+  hasDraft: boolean;
+}
+
+function StatusBadge({ post }: { post: Post }) {
+  if (post.published && post.hasDraft) {
+    return (
+      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+        Edited
+      </span>
+    );
+  }
+  if (post.published) {
+    return (
+      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+        Published
+      </span>
+    );
+  }
+  return (
+    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+      Draft
+    </span>
+  );
 }
 
 export default function BlogListPage() {
@@ -57,12 +81,15 @@ export default function BlogListPage() {
               className="flex items-center justify-between p-3 border border-border rounded-md"
             >
               <div>
-                <Link
-                  href={`/admin/blog/${post.slug}`}
-                  className="text-sm font-medium hover:underline"
-                >
-                  {post.title}
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/admin/blog/${post.slug}`}
+                    className="text-sm font-medium hover:underline"
+                  >
+                    {post.title}
+                  </Link>
+                  <StatusBadge post={post} />
+                </div>
                 <p className="text-xs text-muted-foreground">{post.date}</p>
               </div>
               <div className="flex gap-2">

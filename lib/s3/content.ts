@@ -9,10 +9,17 @@ export async function getHomepage() {
 }
 
 export async function getBlogPost(slug: string) {
+  if (slug.endsWith(".draft")) {
+    throw new Error("Not found");
+  }
   const raw = await getObject(`blog/${slug}.mdx`);
   const { data: frontmatter, content } = matter(raw);
   const stats = readingTime(content);
-  return { frontmatter, content, readingTime: stats.text };
+  return {
+    frontmatter,
+    content,
+    readingTime: stats.text,
+  };
 }
 
 export async function listBlogPosts() {
@@ -24,7 +31,7 @@ export async function listBlogPosts() {
   const response = await s3.send(command);
   const keys = (response.Contents ?? [])
     .map((obj) => obj.Key!)
-    .filter((key) => key.endsWith(".mdx"));
+    .filter((key) => key.endsWith(".mdx") && !key.endsWith(".draft.mdx"));
 
   const posts = await Promise.all(
     keys.map(async (key) => {

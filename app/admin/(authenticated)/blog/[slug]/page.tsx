@@ -7,6 +7,8 @@ import { EditorLayout } from "@/components/admin/editor-layout";
 export default function EditPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const [content, setContent] = useState<string | null>(null);
+  const [isPublished, setIsPublished] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -15,7 +17,11 @@ export default function EditPostPage() {
         if (!res.ok) throw new Error("Not found");
         return res.json();
       })
-      .then((data) => setContent(data.content))
+      .then((data) => {
+        setContent(data.content);
+        setIsPublished(data.hasPublished ?? false);
+        setHasDraft(data.hasDraft ?? false);
+      })
       .catch(() => setError("Failed to load post"));
   }, [slug]);
 
@@ -31,6 +37,8 @@ export default function EditPostPage() {
     <EditorLayout
       initialContent={content}
       showFrontmatterForm
+      isPublished={isPublished}
+      hasDraft={hasDraft}
       onSave={async (newContent) => {
         const res = await fetch(`/api/admin/blog/${slug}`, {
           method: "PUT",
@@ -38,6 +46,20 @@ export default function EditPostPage() {
           body: JSON.stringify({ content: newContent }),
         });
         if (!res.ok) throw new Error("Save failed");
+      }}
+      onPublish={async () => {
+        const res = await fetch(`/api/admin/blog/${slug}/publish`, {
+          method: "POST",
+        });
+        if (!res.ok) throw new Error("Publish failed");
+        setIsPublished(true);
+      }}
+      onUnpublish={async () => {
+        const res = await fetch(`/api/admin/blog/${slug}/publish`, {
+          method: "DELETE",
+        });
+        if (!res.ok) throw new Error("Unpublish failed");
+        setIsPublished(false);
       }}
     />
   );

@@ -9,6 +9,10 @@ interface EditorLayoutProps {
   onSave: (content: string) => Promise<void>;
   saveLabel?: string;
   showFrontmatterForm?: boolean;
+  isPublished?: boolean;
+  hasDraft?: boolean;
+  onPublish?: () => Promise<void>;
+  onUnpublish?: () => Promise<void>;
 }
 
 function parseFrontmatter(content: string) {
@@ -39,6 +43,10 @@ export function EditorLayout({
   onSave,
   saveLabel = "Save",
   showFrontmatterForm = false,
+  isPublished,
+  hasDraft: initialHasDraft,
+  onPublish,
+  onUnpublish,
 }: EditorLayoutProps) {
   const [content, setContent] = useState(initialContent);
   const [lastSavedContent, setLastSavedContent] = useState(initialContent);
@@ -48,6 +56,8 @@ export function EditorLayout({
   const [mobileTab, setMobileTab] = useState<"editor" | "preview">("editor");
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [hasDraft, setHasDraft] = useState(initialHasDraft ?? false);
 
   // Frontmatter state
   const [fmTitle, setFmTitle] = useState("");
@@ -65,19 +75,59 @@ export function EditorLayout({
   }, [initialContent, showFrontmatterForm]);
 
   const hasUnsavedChanges = content !== lastSavedContent;
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"" | "saving" | "saved">("");
 
   const handleSave = useCallback(async () => {
+    // Clear any pending auto-save
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
     setSaving(true);
     setSaved(false);
+    setAutoSaveStatus("");
     try {
       await onSave(content);
       setLastSavedContent(content);
+      setHasDraft(true);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } finally {
       setSaving(false);
     }
   }, [content, onSave]);
+
+  // Auto-save: 3-second debounce after content changes
+  useEffect(() => {
+    if (content === lastSavedContent) return;
+    autoSaveTimer.current = setTimeout(async () => {
+      setAutoSaveStatus("saving");
+      try {
+        await onSave(content);
+        setLastSavedContent(content);
+        setHasDraft(true);
+        setAutoSaveStatus("saved");
+        setTimeout(() => setAutoSaveStatus(""), 2000);
+      } catch {
+        setAutoSaveStatus("");
+      }
+    }, 3000);
+    return () => {
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+      }
+    };
+  }, [content, lastSavedContent, onSave]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+      }
+    };
+  }, []);
 
   // Cmd+S / Ctrl+S
   useEffect(() => {
@@ -234,6 +284,31 @@ export function EditorLayout({
     }
   };
 
+  const handlePublish = async () => {
+    if (!onPublish) return;
+    setPublishing(true);
+    try {
+      // Save current content first, then publish
+      await onSave(content);
+      setLastSavedContent(content);
+      await onPublish();
+      setHasDraft(false);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!onUnpublish) return;
+    setPublishing(true);
+    try {
+      await onUnpublish();
+      setHasDraft(true);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const frontmatterForm = showFrontmatterForm && (
     <div className="px-4 py-3 border-b border-border space-y-2">
       <div className="flex items-center gap-2">
@@ -299,13 +374,42 @@ export function EditorLayout({
             Preview
           </button>
         </div>
-        <div className="hidden md:block text-sm text-muted-foreground">
-          {saving ? "Saving..." : saved ? "Saved" : ""}
+        <div className="hidden md:flex items-center gap-3">
+          {onPublish && (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                isPublished && hasDraft
+                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                  : isPublished
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+              }`}
+            >
+              {isPublished && hasDraft ? "Edited" : isPublished ? "Published" : "Draft"}
+            </span>
+          )}
+          <span className="text-sm text-muted-foreground">
+            {saving ? "Saving..." : saved ? "Saved" : autoSaveStatus === "saving" ? "Auto-saving..." : autoSaveStatus === "saved" ? "Auto-saved" : ""}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground md:hidden">
-            {saving ? "Saving..." : saved ? "Saved" : ""}
+            {saving ? "Saving..." : saved ? "Saved" : autoSaveStatus === "saving" ? "Auto-saving..." : autoSaveStatus === "saved" ? "Auto-saved" : ""}
           </span>
+          {/* Mobile-only status badge */}
+          {onPublish && (
+            <span
+              className={`md:hidden text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                isPublished && hasDraft
+                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                  : isPublished
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+              }`}
+            >
+              {isPublished && hasDraft ? "Edited" : isPublished ? "Published" : "Draft"}
+            </span>
+          )}
           {hasUnsavedChanges && (
             <span className="w-2 h-2 bg-yellow-400 rounded-full" />
           )}
@@ -316,6 +420,24 @@ export function EditorLayout({
           >
             {saveLabel}
           </button>
+          {onPublish && hasDraft && (
+            <button
+              onClick={handlePublish}
+              disabled={publishing}
+              className="px-4 py-1.5 text-sm bg-green-600 text-white rounded-md hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+            >
+              {publishing ? "Publishing..." : "Publish"}
+            </button>
+          )}
+          {onUnpublish && isPublished && (
+            <button
+              onClick={handleUnpublish}
+              disabled={publishing}
+              className="text-xs text-muted-foreground hover:text-destructive transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {publishing ? "Unpublishing..." : "Unpublish"}
+            </button>
+          )}
         </div>
       </div>
 
