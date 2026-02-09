@@ -13,11 +13,11 @@ import {
 } from "@codemirror/commands";
 import {
   syntaxHighlighting,
-  defaultHighlightStyle,
+  HighlightStyle,
   indentOnInput,
   bracketMatching,
 } from "@codemirror/language";
-import { oneDark } from "@codemirror/theme-one-dark";
+import { tags } from "@lezer/highlight";
 import { search, searchKeymap } from "@codemirror/search";
 
 export interface CodeMirrorHandle {
@@ -31,6 +31,34 @@ interface CodeMirrorEditorProps {
   darkMode?: boolean;
   placeholder?: string;
 }
+
+// VS Code Light+ inspired syntax highlighting
+const vscodeLightHighlight = HighlightStyle.define([
+  { tag: tags.keyword, color: "#AF00DB" },
+  { tag: tags.operator, color: "#000000" },
+  { tag: tags.typeName, color: "#267F99" },
+  { tag: tags.propertyName, color: "#001080" },
+  { tag: tags.variableName, color: "#001080" },
+  { tag: [tags.string, tags.special(tags.brace)], color: "#A31515" },
+  { tag: tags.number, color: "#098658" },
+  { tag: tags.bool, color: "#0000FF" },
+  { tag: tags.comment, color: "#008000", fontStyle: "italic" },
+  { tag: tags.definition(tags.variableName), color: "#0070C1" },
+  { tag: tags.function(tags.variableName), color: "#795E26" },
+  { tag: tags.heading, color: "#0000FF", fontWeight: "bold" },
+  { tag: tags.heading1, color: "#0000FF", fontWeight: "bold", fontSize: "1.2em" },
+  { tag: tags.heading2, color: "#0000FF", fontWeight: "bold", fontSize: "1.1em" },
+  { tag: tags.heading3, color: "#0000FF", fontWeight: "bold" },
+  { tag: tags.emphasis, fontStyle: "italic", color: "#000000" },
+  { tag: tags.strong, fontWeight: "bold", color: "#000000" },
+  { tag: tags.link, color: "#4078F2", textDecoration: "underline" },
+  { tag: tags.url, color: "#4078F2" },
+  { tag: tags.monospace, color: "#E45649", backgroundColor: "rgba(0,0,0,0.04)", borderRadius: "3px" },
+  { tag: tags.strikethrough, textDecoration: "line-through" },
+  { tag: tags.meta, color: "#808080" },
+  { tag: tags.processingInstruction, color: "#808080" },
+  { tag: tags.quote, color: "#22863A", fontStyle: "italic" },
+]);
 
 const lightTheme = EditorView.theme({
   "&": {
@@ -68,23 +96,77 @@ const lightTheme = EditorView.theme({
   },
 });
 
-const darkThemeOverride = EditorView.theme({
+// VS Code Dark+ inspired syntax highlighting
+const vscodeDarkHighlight = HighlightStyle.define([
+  { tag: tags.keyword, color: "#C586C0" },
+  { tag: tags.operator, color: "#D4D4D4" },
+  { tag: tags.typeName, color: "#4EC9B0" },
+  { tag: tags.propertyName, color: "#9CDCFE" },
+  { tag: tags.variableName, color: "#9CDCFE" },
+  { tag: [tags.string, tags.special(tags.brace)], color: "#CE9178" },
+  { tag: tags.number, color: "#B5CEA8" },
+  { tag: tags.bool, color: "#569CD6" },
+  { tag: tags.comment, color: "#6A9955", fontStyle: "italic" },
+  { tag: tags.definition(tags.variableName), color: "#DCDCAA" },
+  { tag: tags.function(tags.variableName), color: "#DCDCAA" },
+  { tag: tags.heading, color: "#569CD6", fontWeight: "bold" },
+  { tag: tags.heading1, color: "#569CD6", fontWeight: "bold", fontSize: "1.2em" },
+  { tag: tags.heading2, color: "#569CD6", fontWeight: "bold", fontSize: "1.1em" },
+  { tag: tags.heading3, color: "#569CD6", fontWeight: "bold" },
+  { tag: tags.emphasis, fontStyle: "italic", color: "#D4D4D4" },
+  { tag: tags.strong, fontWeight: "bold", color: "#D4D4D4" },
+  { tag: tags.link, color: "#3794FF", textDecoration: "underline" },
+  { tag: tags.url, color: "#3794FF" },
+  { tag: tags.monospace, color: "#CE9178", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: "3px" },
+  { tag: tags.strikethrough, textDecoration: "line-through" },
+  { tag: tags.meta, color: "#808080" },
+  { tag: tags.processingInstruction, color: "#808080" },
+  { tag: tags.quote, color: "#6A9955", fontStyle: "italic" },
+]);
+
+const darkTheme = EditorView.theme({
   "&": {
     height: "100%",
     fontSize: "13px",
+    backgroundColor: "#1E1E1E",
+    color: "#D4D4D4",
   },
   ".cm-scroller": {
     fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace",
     padding: "16px",
     overflow: "auto",
   },
+  ".cm-content": {
+    caretColor: "#AEAFAD",
+  },
   ".cm-gutters": {
     display: "none",
+  },
+  "&.cm-focused .cm-cursor": {
+    borderLeftColor: "#AEAFAD",
   },
   "&.cm-focused": {
     outline: "none",
   },
-});
+  ".cm-selectionBackground": {
+    backgroundColor: "#264F78 !important",
+  },
+  "&.cm-focused .cm-selectionBackground": {
+    backgroundColor: "#264F78 !important",
+  },
+  ".cm-activeLine": {
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+  },
+  ".cm-placeholder": {
+    color: "#6A6A6A",
+  },
+  ".cm-searchMatch": {
+    backgroundColor: "#515C6A",
+  },
+  ".cm-searchMatch-selected": {
+    backgroundColor: "#2E7D32",
+  },
+}, { dark: true });
 
 export const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(
   function CodeMirrorEditor({ value, onChange, onSave, darkMode = false, placeholder = "" }, ref) {
@@ -154,8 +236,8 @@ export const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorPro
       });
 
       const themeExtensions = darkMode
-        ? [oneDark, darkThemeOverride]
-        : [syntaxHighlighting(defaultHighlightStyle), lightTheme];
+        ? [darkTheme, syntaxHighlighting(vscodeDarkHighlight)]
+        : [syntaxHighlighting(vscodeLightHighlight), lightTheme];
 
       const state = EditorState.create({
         doc: value,
