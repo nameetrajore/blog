@@ -35,6 +35,16 @@ export async function putObject(key: string, content: string): Promise<void> {
   await s3.send(command);
 }
 
+export async function putBinaryObject(key: string, body: Buffer, contentType: string): Promise<void> {
+  const command = new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET_NAME,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  });
+  await s3.send(command);
+}
+
 export async function deleteObject(key: string): Promise<void> {
   const command = new DeleteObjectCommand({
     Bucket: process.env.S3_BUCKET_NAME,

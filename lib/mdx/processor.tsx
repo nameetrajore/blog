@@ -8,6 +8,7 @@ import {
 } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { Mermaid } from "@/components/mermaid";
+import { Lightbox } from "@/components/lightbox";
 import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
@@ -52,16 +53,19 @@ const mdxComponents = {
       {...props}
     />
   ),
-  img: ({ alt, ...rest }: El<"img">) => {
+  img: ({ alt, src, ...rest }: El<"img">) => {
     const isFullWidth = alt?.endsWith("|full") ?? false;
     const caption = isFullWidth ? alt!.slice(0, -5).trim() : alt;
     return (
       <span className={`block ${isFullWidth ? "-mx-6 md:-mx-16 mb-4" : "mb-4"}`}>
-        <img
-          alt={caption}
-          className="rounded-lg w-full bg-white p-2 dark:bg-white/95"
-          {...rest}
-        />
+        <Lightbox src={typeof src === "string" ? src : undefined}>
+          <img
+            alt={caption}
+            src={src}
+            className="rounded-lg w-full bg-white p-2 dark:bg-white/95"
+            {...rest}
+          />
+        </Lightbox>
         {caption && (
           <span className="block text-center text-xs text-muted-foreground mt-2">
             {caption}
@@ -142,6 +146,77 @@ const mdxComponents = {
     />
   ),
   hr: () => <hr className="border-border my-8" />,
+  iframe: (props: El<"iframe">) => (
+    <Lightbox>
+      <span className="block mb-4 rounded-lg overflow-hidden aspect-video">
+        <iframe
+          className="w-full h-full"
+          allowFullScreen
+          {...props}
+        />
+      </span>
+    </Lightbox>
+  ),
+  video: ({ ...props }: El<"video">) => (
+    <Lightbox>
+      <span className="block mb-4 rounded-lg overflow-hidden">
+        <video
+          className="w-full"
+          controls
+          {...props}
+        />
+      </span>
+    </Lightbox>
+  ),
+  Video: ({ src, title }: { src: string; title?: string }) => {
+    const isYouTube = src.includes("youtube.com") || src.includes("youtu.be");
+    const isVimeo = src.includes("vimeo.com");
+
+    if (isYouTube || isVimeo) {
+      let embedUrl = src;
+      if (isYouTube) {
+        const match = src.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+        if (match) embedUrl = `https://www.youtube.com/embed/${match[1]}`;
+      } else if (isVimeo) {
+        const match = src.match(/vimeo\.com\/(\d+)/);
+        if (match) embedUrl = `https://player.vimeo.com/video/${match[1]}`;
+      }
+      return (
+        <span className="block mb-4">
+          <Lightbox>
+            <span className="block rounded-lg overflow-hidden aspect-video">
+              <iframe
+                src={embedUrl}
+                className="w-full h-full"
+                allowFullScreen
+                title={title ?? "Video"}
+              />
+            </span>
+          </Lightbox>
+          {title && (
+            <span className="block text-center text-xs text-muted-foreground mt-2">
+              {title}
+            </span>
+          )}
+        </span>
+      );
+    }
+
+    return (
+      <span className="block mb-4">
+        <Lightbox>
+          <span className="block rounded-lg overflow-hidden">
+            <video src={src} controls className="w-full" title={title} />
+          </span>
+        </Lightbox>
+        {title && (
+          <span className="block text-center text-xs text-muted-foreground mt-2">
+            {title}
+          </span>
+        )}
+      </span>
+    );
+  },
 };
 
 export async function renderMDX(source: string) {

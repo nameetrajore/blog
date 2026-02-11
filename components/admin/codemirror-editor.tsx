@@ -168,6 +168,55 @@ const darkTheme = EditorView.theme({
   },
 }, { dark: true });
 
+async function uploadAndInsertImage(view: EditorView, file: File) {
+  const pos = view.state.selection.main.head;
+  const placeholder = `![Uploading ${file.name}...]()`;
+
+  // Insert placeholder
+  view.dispatch({
+    changes: { from: pos, insert: placeholder },
+  });
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/admin/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error("Upload failed");
+    const { url } = await res.json();
+
+    // Replace placeholder with actual image markdown
+    const doc = view.state.doc.toString();
+    const placeholderPos = doc.indexOf(placeholder);
+    if (placeholderPos !== -1) {
+      const name = file.name.replace(/\.[^.]+$/, "");
+      view.dispatch({
+        changes: {
+          from: placeholderPos,
+          to: placeholderPos + placeholder.length,
+          insert: `![${name}](${url})`,
+        },
+      });
+    }
+  } catch {
+    // Remove placeholder on failure
+    const doc = view.state.doc.toString();
+    const placeholderPos = doc.indexOf(placeholder);
+    if (placeholderPos !== -1) {
+      view.dispatch({
+        changes: {
+          from: placeholderPos,
+          to: placeholderPos + placeholder.length,
+          insert: "",
+        },
+      });
+    }
+  }
+}
+
 export const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(
   function CodeMirrorEditor({ value, onChange, onSave, darkMode = false, placeholder = "" }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -250,6 +299,34 @@ export const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorPro
           indentOnInput(),
           bracketMatching(),
           EditorView.lineWrapping,
+          EditorView.contentAttributes.of({ spellcheck: "true" }),
+          EditorView.domEventHandlers({
+            paste: (event, view) => {
+              const items = event.clipboardData?.items;
+              if (!items) return false;
+              for (const item of items) {
+                if (item.type.startsWith("image/")) {
+                  event.preventDefault();
+                  const file = item.getAsFile();
+                  if (file) uploadAndInsertImage(view, file);
+                  return true;
+                }
+              }
+              return false;
+            },
+            drop: (event, view) => {
+              const files = event.dataTransfer?.files;
+              if (!files) return false;
+              for (const file of files) {
+                if (file.type.startsWith("image/")) {
+                  event.preventDefault();
+                  uploadAndInsertImage(view, file);
+                  return true;
+                }
+              }
+              return false;
+            },
+          }),
           updateListener,
           ...themeExtensions,
           ...(placeholder ? [placeholderExt(placeholder)] : []),
