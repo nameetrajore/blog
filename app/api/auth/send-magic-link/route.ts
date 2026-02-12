@@ -2,11 +2,9 @@ import { sendMagicLink } from "@/lib/auth/email";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
-  const { email } = await request.json();
-
-  if (!email || email !== process.env.ADMIN_EMAIL) {
-    // Return success even for invalid emails to prevent enumeration
-    return NextResponse.json({ ok: true });
+  const email = process.env.ADMIN_EMAIL;
+  if (!email) {
+    return NextResponse.json({ error: "Admin email not configured" }, { status: 500 });
   }
 
   const proto = request.headers.get("x-forwarded-proto") || "https";

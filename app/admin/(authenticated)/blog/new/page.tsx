@@ -14,7 +14,13 @@ date: "${new Date().toISOString().split("T")[0]}"
 
 export default function NewPostPage() {
   const [slug, setSlug] = useState("");
+  const [created, setCreated] = useState(false);
   const router = useRouter();
+
+  // After creation, redirect to the edit page for the new post
+  if (created && slug) {
+    router.replace(`/admin/blog/${slug}`);
+  }
 
   return (
     <div>
@@ -25,7 +31,8 @@ export default function NewPostPage() {
           value={slug}
           onChange={(e) => setSlug(e.target.value.replace(/[^a-z0-9-]/g, ""))}
           placeholder="my-post-slug"
-          className="px-2 py-1 border border-input rounded text-sm bg-background text-foreground outline-none focus:ring-2 focus:ring-ring"
+          disabled={created}
+          className="px-2 py-1 border border-input rounded text-sm bg-background text-foreground outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
         />
       </div>
       <EditorLayout
@@ -42,7 +49,7 @@ export default function NewPostPage() {
           });
 
           if (!res.ok) throw new Error("Failed to create post");
-          router.push("/admin/blog");
+          setCreated(true);
         }}
       />
     </div>

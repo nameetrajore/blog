@@ -8,9 +8,8 @@ export function AdminNav() {
   const router = useRouter();
 
   const links = [
+    { href: "/admin/blog", label: "Blog" },
     { href: "/admin/homepage", label: "Homepage" },
-    { href: "/admin/blog", label: "Blog Posts" },
-    { href: "/admin/blog/new", label: "New Post" },
   ];
 
   async function handleLogout() {
@@ -30,7 +29,7 @@ export function AdminNav() {
               key={link.href}
               href={link.href}
               className={`text-sm whitespace-nowrap transition-colors ${
-                pathname === link.href
+                pathname === link.href || pathname.startsWith(link.href + "/")
                   ? "text-foreground font-medium"
                   : "text-muted-foreground hover:text-foreground"
               }`}
